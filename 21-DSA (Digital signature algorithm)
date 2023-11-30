@@ -1,0 +1,40 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/dsa.h>
+#include <openssl/sha.h>
+DSA_SIG *generateDSASignature(const char *message, DSA *dsa) {
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    DSA_SIG *signature;
+    SHA1((const unsigned char *)message, strlen(message), hash);
+    signature = DSA_do_sign(hash, SHA_DIGEST_LENGTH, dsa);
+    return signature;
+}
+int verifyDSASignature(const char *message, DSA_SIG *signature, DSA *dsa) {
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    SHA1((const unsigned char *)message, strlen(message), hash);
+    return DSA_do_verify(hash, SHA_DIGEST_LENGTH, signature, dsa);
+}
+int main() {
+    DSA *dsa;
+    DSA_SIG *signature;
+    dsa = DSA_generate_parameters(1024, NULL, 0, NULL, NULL, NULL, NULL);
+    if (dsa == NULL) {
+        fprintf(stderr, "DSA key generation failed.\n");
+        return 1;
+    }
+    printf("DSA Parameters:\n");
+    DSA_print_fp(stdout, dsa, 0);
+    const char *message = "Hello, DSA!";
+    signature = generateDSASignature(message, dsa);
+    printf("Generated DSA Signature:\n");
+    BN_print_fp(stdout, signature->r);
+    printf("\n");
+    BN_print_fp(stdout, signature->s);
+    printf("\n");
+    int verified = verifyDSASignature(message, signature, dsa);
+    printf("Signature Verification Result: %s\n", verified ? "Success" : "Failure");
+    DSA_free(dsa);
+    DSA_SIG_free(signature);
+    return 0;
+}
