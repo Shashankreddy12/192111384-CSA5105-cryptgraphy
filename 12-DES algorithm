@@ -1,91 +1,45 @@
 #include <stdio.h>
 #include <stdint.h>
-void generateKeys(uint64_t key, uint64_t keys[16]);
-uint64_t decrypt(uint64_t cipherText, uint64_t keys[16]);
-void printBinary(uint64_t value);
-const int initialPermutationTable[] = {58, 50, 42, 34, 26, 18, 10, 2,
-                                       60, 52, 44, 36, 28, 20, 12, 4,
-                                       62, 54, 46, 38, 30, 22, 14, 6,
-                                       64, 56, 48, 40, 32, 24, 16, 8,
-                                       57, 49, 41, 33, 25, 17, 9, 1,
-                                       59, 51, 43, 35, 27, 19, 11, 3,
-                                       61, 53, 45, 37, 29, 21, 13, 5,
-                                       63, 55, 47, 39, 31, 23, 15, 7};
-const int keyPermutationChoice1Table[] = {57, 49, 41, 33, 25, 17, 9,
-                                          1, 58, 50, 42, 34, 26, 18,
-                                          10, 2, 59, 51, 43, 35, 27,
-                                          19, 11, 3, 60, 52, 44, 36,
-                                          63, 55, 47, 39, 31, 23, 15,
-                                          7, 62, 54, 46, 38, 30, 22,
-                                          14, 6, 61, 53, 45, 37, 29,
-                                          21, 13, 5, 28, 20, 12, 4};
-const int keyPermutationChoice2Table[] = {14, 17, 11, 24, 1, 5, 3, 28,
-                                          15, 6, 21, 10, 23, 19, 12, 4,
-                                          26, 8, 16, 7, 27, 20, 13, 2,
-                                          41, 52, 31, 37, 47, 55, 30, 40,
-                                          51, 45, 33, 48, 44, 49, 39, 56,
-                                          34, 53, 46, 42, 50, 36, 29, 32};
-const int keyShifts[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+#define KEY_SIZE 8
+#define BLOCK_SIZE 8
+static const int initialPermutationTable[] = { 2, 6, 3, 1, 4, 8, 5, 7 };)
+uint8_t initialKey[KEY_SIZE] = { 0x13, 0x34, 0x57, 0x79, 0x9B, 0xBC, 0xDF, 0xF1 };
+uint8_t ciphertext[BLOCK_SIZE] = { 0x21, 0xF4, 0x6B, 0x3B, 0xD1, 0x1A, 0xE5, 0x45 };
+void generateSubKeys(uint8_t* key, uint8_t subKeys[16][KEY_SIZE]);
+void applyInitialPermutation(uint8_t* block);
+void applyInverseInitialPermutation(uint8_t* block);
+void decrypt(uint8_t* block, uint8_t subKeys[16][KEY_SIZE]);
 int main() {
-    uint64_t key = 0x0F1571C947D9E859;
-    uint64_t cipherText = 0x85E813540F0AB405;
-    uint64_t keys[16];
-    generateKeys(key, keys);
-    uint64_t decryptedText = decrypt(cipherText, keys);
-    printf("Original Key: ");
-    printBinary(key);
-    printf("\nCipher Text: ");
-    printBinary(cipherText);
-    printf("\nDecrypted Text: ");
-    printBinary(decryptedText);
+    uint8_t subKeys[16][KEY_SIZE];
+    generateSubKeys(initialKey, subKeys);
+    printf("Ciphertext: ");
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        printf("%02x ", ciphertext[i]);
+    }
+    printf("\n");
+    decrypt(ciphertext, subKeys);
+    printf("Decrypted Text: ");
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        printf("%02x ", ciphertext[i]);
+    }
+    printf("\n");
+
     return 0;
 }
-void generateKeys(uint64_t key, uint64_t keys[16]) {
-    // Apply PC-1 permutation on the key
-    uint64_t permutedKey = 0;
-    for (int i = 0; i < 56; i++) {
-        permutedKey |= ((key >> (64 - keyPermutationChoice1Table[i])) & 1) << (55 - i);
-    }
-    uint32_t leftHalf = permutedKey >> 28;
-    uint32_t rightHalf = (permutedKey << 4) >> 28;
-    for (int round = 0; round < 16; round++) {
-        leftHalf = ((leftHalf << keyShifts[round]) | (leftHalf >> (28 - keyShifts[round]))) & 0x0FFFFFFF;
-        rightHalf = ((rightHalf << keyShifts[round]) | (rightHalf >> (28 - keyShifts[round]))) & 0x0FFFFFFF;
-        uint64_t combinedHalf = ((uint64_t)leftHalf << 28) | rightHalf;
-        keys[round] = 0;
-        for (int i = 0; i < 48; i++) {
-            keys[round] |= ((combinedHalf >> (56 - keyPermutationChoice2Table[i])) & 1) << (47 - i);
+void generateSubKeys(uint8_t* key, uint8_t subKeys[16][KEY_SIZE]) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < KEY_SIZE; j++) {
+            subKeys[i][j] = key[(15 - i + j) % KEY_SIZE];
         }
     }
 }
-uint64_t initialPermutation(uint64_t input) {
-    uint64_t permutedInput = 0;
-    for (int i = 0; i < 64; i++) {
-        permutedInput |= ((input >> (64 - initialPermutationTable[i])) & 1) << (63 - i);
-    }
-    return permutedInput;
+void applyInitialPermutation(uint8_t* block) {
 }
-uint64_t finalPermutation(uint64_t input) {
+void applyInverseInitialPermutation(uint8_t* block) {
 }
-uint32_t feistel(uint32_t rightHalf, uint64_t subkey) {
-    return rightHalf ^ subkey;
-}
-uint64_t decrypt(uint64_t cipherText, uint64_t keys[16]) {
-    uint64_t permutedText = initialPermutation(cipherText);
-    uint32_t leftHalf = permutedText >> 32;
-    uint32_t rightHalf = permutedText & 0xFFFFFFFF;
-    for (int round = 15; round >= 0; round--) {
-        uint32_t originalRightHalf = rightHalf;
-        rightHalf = leftHalf ^ feistel(rightHalf, keys[round]);
-        leftHalf = originalRightHalf;
-    }
-    uint64_t combinedText = ((uint64_t)leftHalf << 32) | rightHalf;
-    uint64_t decryptedText = finalPermutation(combinedText);
-    return decryptedText;
-}
-void printBinary(uint64_t value) {
-    for (int i = 63; i >= 0; i--) {
-        printf("%d", (int)((value >> i) & 1));
-        if (i % 8 == 0) printf(" ");
+void decrypt(uint8_t* block, uint8_t subKeys[16][KEY_SIZE]) {
+    for (int i = 0; i < 16; i++) {
+        applyInitialPermutation(block);
+        applyInverseInitialPermutation(block);
     }
 }
