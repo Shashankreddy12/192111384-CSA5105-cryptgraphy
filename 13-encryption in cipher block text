@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <openssl/des.h>
+void encrypt3DESCBC(uint8_t *plaintext, size_t size, uint8_t *key, uint8_t *iv) {
+    DES_cblock desKey1, desKey2, desKey3, desIV;
+    DES_key_schedule keySchedule1, keySchedule2, keySchedule3;
+    memcpy(desKey1, key, 8);
+    memcpy(desKey2, key + 8, 8);
+    memcpy(desKey3, key + 16, 8);
+    memcpy(desIV, iv, 8);
+    DES_set_key_unchecked(&desKey1, &keySchedule1);
+    DES_set_key_unchecked(&desKey2, &keySchedule2);
+    DES_set_key_unchecked(&desKey3, &keySchedule3);
+    for (size_t i = 0; i < size; i += BLOCK_SIZE) {
+        DES_cblock inputBlock, outputBlock;
+        memcpy(inputBlock, plaintext + i, BLOCK_SIZE);
+
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
+            inputBlock[j] ^= desIV[j];
+        }
+        DES_ecb3_encrypt(&inputBlock, &outputBlock, &keySchedule1, &keySchedule2, &keySchedule3, DES_ENCRYPT);
+        memcpy(plaintext + i, outputBlock, BLOCK_SIZE);
+        memcpy(desIV, outputBlock, BLOCK_SIZE);
+    }
+}
+int main() {
+    uint8_t plaintext[] = "Hello, World!";
+    size_t plaintextSize = strlen((char *)plaintext);
+    uint8_t key[] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 0x55, 0x44, 0x33, 0x22, 0x11, 0xAA, 0xBB, 0xCC};
+    uint8_t iv[BLOCK_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    size_t paddedSize = (plaintextSize + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE;
+    memset(plaintext + plaintextSize, 0, paddedSize - plaintextSize);
+    encrypt3DESCBC(plaintext, paddedSize, key, iv);
+    printf("Encrypted Data: ");
+    for (size_t i = 0; i < paddedSize; ++i) {
+        printf("%02x ", plaintext[i]);
+    }
+    printf("\n");
+    return 0;
+}
