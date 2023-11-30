@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#define BLOCK_SIZE 16
+void addPadding(uint8_t *data, size_t size) {
+    size_t paddingSize = BLOCK_SIZE - (size % BLOCK_SIZE);
+    data[size] = 0x80;  // Add 1 bit at the beginning of padding
+    memset(data + size + 1, 0, paddingSize - 1);  // Fill the rest with zeros
+}
+void encryptECB(uint8_t *plaintext, size_t size, uint8_t *key) {
+    printf("ECB Encrypted Data: ");
+    for (size_t i = 0; i < size; i++) {
+        printf("%02x ", plaintext[i]);
+    }
+    printf("\n");
+}
+void encryptCBC(uint8_t *plaintext, size_t size, uint8_t *key, uint8_t *iv) {
+    printf("CBC Encrypted Data: ");
+    for (size_t i = 0; i < size; i++) {
+        // Implement actual encryption logic here
+        printf("%02x ", plaintext[i]);
+    }
+    printf("\n");
+}
+void encryptCFB(uint8_t *plaintext, size_t size, uint8_t *key, uint8_t *iv) {
+    printf("CFB Encrypted Data: ");
+    for (size_t i = 0; i < size; i++) {
+        // Implement actual encryption logic here
+        printf("%02x ", plaintext[i]);
+    }
+    printf("\n");
+}
+int main() {
+    uint8_t plaintext[] = "Hello, World!";
+    size_t plaintextSize = strlen((char *)plaintext);
+    uint8_t key[BLOCK_SIZE] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x97, 0x99, 0x77, 0xbe, 0x46, 0x84};
+    uint8_t iv[BLOCK_SIZE] = {0x00};  // Initialization Vector for CBC and CFB modes
+    addPadding(plaintext, plaintextSize);
+    encryptECB(plaintext, plaintextSize, key);
+    encryptCBC(plaintext, plaintextSize, key, iv);
+    encryptCFB(plaintext, plaintextSize, key, iv);
+    return 0;
+}
